@@ -1,9 +1,30 @@
+/*******************************************************************************************************
+  Programs for Arduino - Copyright of the author Stuart Robinson - 04/04/20
+  This program is supplied as is, it is up to the user of the program to decide if the program is
+  suitable for the intended purpose and free from errors.
+*******************************************************************************************************/
+
+/*******************************************************************************************************
+  Program Operation - This is a program that demonstrates the detailed setup of a LoRa test receiver.
+  The program listens for incoming packets using the LoRa settings in the 'Settings.h' file. The pins
+  to access the lora device need to be defined in the 'Settings.h' file also.
+  There is a printout on the Arduino IDE Serial Monitor of the valid packets received, the packet is
+  assumed to be in ASCII printable text, if it's not ASCII text characters from 0x20 to 0x7F, expect
+  weird things to happen on the Serial Monitor. The LED will flash for each packet received and the
+  buzzer will sound, if fitted.
+  Sample serial monitor output;
+  7s  Hello World 1234567890*,CRC,DAAB,RSSI,-52dBm,SNR,9dB,Length,23,Packets,5,Errors,0,IRQreg,50
+  If there is a packet error it might look like this, which is showing a CRC error,
+  968s PacketError,RSSI,-87dBm,SNR,-11dB,Length,23,Packets,613,Errors,2,IRQreg,70,IRQ_HEADER_VALID,IRQ_CRC_ERROR,IRQ_RX_DONE
+  Serial monitor baud rate is set at 9600.
+*******************************************************************************************************/
+
 #define Program_Version "V1.1"
+#define SX126XDEBUG 1
 
 #include <SPI.h>                                 //the lora device is SPI based so load the SPI library
 #include <SX126XLT.h>                            //include the appropriate library   
 #include "Settings.h"                            //include the setiings file, frequencies, LoRa settings etc   
-#include "main.h"
 
 SX126XLT LT;                                     //create a library class instance called LT
 
@@ -15,6 +36,10 @@ uint8_t RXBUFFER[RXBUFFER_SIZE];                 //create the buffer that receiv
 uint8_t RXPacketL;                               //stores length of packet received
 int8_t  PacketRSSI;                              //stores RSSI of received packet
 int8_t  PacketSNR;                               //stores signal to noise ratio (SNR) of received packet
+
+void packet_is_OK();
+void packet_is_Error();
+void printElapsedTime();
 
 
 void loop()
@@ -162,6 +187,7 @@ void setup()
     digitalWrite(BUZZER, LOW);
   }
 
+
   SPI.begin();
 
   //SPI beginTranscation is normally part of library routines, but if it is disabled in the library
@@ -169,7 +195,7 @@ void setup()
   //SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
 
   //setup hardware pins used by device, then check if device is found
-  if (LT.begin(NSS, NRESET, RFBUSY, DIO1, SW, LORA_DEVICE))
+  if (LT.begin(NSS, NRESET, RFBUSY, DIO1, RX_EN, TX_EN, LORA_DEVICE))
   {
     Serial.println(F("LoRa Device found"));
     led_Flash(2, 125);
